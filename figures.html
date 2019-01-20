@@ -1,0 +1,492 @@
+<html>
+<head lang="ru">
+	<meta charset="utf-8">
+	<title>Canvas & Mootools</title>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mootools/1.6.0/mootools-core.js"></script>
+	<script type="text/javascript">
+		var canvas, ctx, balls, squares, triangles, wayRandom, idTimerUp, idTimerDown, idTimerLeft, idTimerRight, idTimerRandom, idTimerChaos;
+		var maxSize = 60;
+		TBall = new Class({
+			initialize: function(pX,pY) {
+				this.posX = pX; //позиция шарика по X
+				this.posY = pY; //позиция шарика по Y
+				//цвет шарика, формируется случайным образом
+				this.colBall = 'rgb('+Math.floor(Math.random()*256)+','
+				+Math.floor(Math.random()*256)+','+Math.floor(Math.random()*256)+')';
+				// радиус шарика, случайное число от 5 до 30
+				this.rBall = 5+Math.random()*25;
+			},
+			posX: 0,
+			posY: 0,
+			colBall:"rgb(0,0,0)",
+			rBall: 0,
+			colorBall: function(ctx){
+				// формируем градиентную заливку для шарика
+				with (this){
+					var gradient = ctx.createRadialGradient(posX+rBall/4,
+					posY-rBall/6, rBall/8, posX, posY, rBall);
+					gradient.addColorStop(0, '#fff');
+					gradient.addColorStop(0.85, colBall);
+					return gradient;
+				}
+			},
+			draw: function(ctx){
+				// рисуем шарик на canvas
+				with (this){
+					ctx.fillStyle = colorBall(ctx);
+					ctx.beginPath();
+					ctx.arc(posX, posY, rBall, 0, 2*Math.PI, false);
+					ctx.closePath();
+					ctx.fill();
+				}
+			}
+		});
+		TSquare = new Class({
+			initialize: function(pX,pY) {
+				this.posX = pX; //позиция шарика по X
+				this.posY = pY; //позиция шарика по Y
+				//цвет формируется случайным образом
+				this.colSquare = 'rgb('+Math.floor(Math.random()*256)+','
+				+Math.floor(Math.random()*256)+','+Math.floor(Math.random()*256)+')';
+				// ширина квадрата, случайное число от 5 до 30
+				this.sizeSquare = 5+Math.random()*25;
+			},
+			posX: 0,
+			posY: 0,
+			colSquare:"rgb(0,0,0)",
+			sizeSquare: 0,
+			colorSquare: function(ctx){
+				// формируем градиентную заливку
+				with (this){
+					var gradient = ctx.createRadialGradient(posX+sizeSquare/4,
+					posY-sizeSquare/6, sizeSquare/8, posX, posY, sizeSquare);
+					gradient.addColorStop(0, '#fff');
+					gradient.addColorStop(0.85, colSquare);
+					return gradient;
+				}
+			},
+			draw: function(ctx){
+				// рисуем квадрат на canvas
+				with (this){
+					ctx.fillStyle = colorSquare(ctx);
+					ctx.beginPath();
+					ctx.fillRect(posX, posY, sizeSquare, sizeSquare);
+					ctx.closePath();
+					ctx.stroke();
+					ctx.fill();
+				}
+			}
+		});
+		TTriangle = new Class({
+			initialize: function(pX,pY) {
+				this.posX = pX; //позиция по X
+				this.posY = pY; //позиция по Y
+				//цвет формируется случайным образом
+				this.colTriangle = 'rgb('+Math.floor(Math.random()*256)+','
+				+Math.floor(Math.random()*256)+','+Math.floor(Math.random()*256)+')';
+				//высота и ширина треугольника
+				this.height = 5+Math.random()*25;
+				this.width = 5+Math.random()*25;
+			},
+			posX: 0,
+			posY: 0,
+			colTriangle: "rgb(0,0,0)",
+			height: 0,
+			width: 0,
+			colorTriangle: function(ctx){
+				// формируем градиентную заливку для треугольника
+				with (this){
+					var gradient = ctx.createRadialGradient(posX+height/4,
+					posY-height/6, height/8, posX, posY, height);
+					gradient.addColorStop(0, '#fff');
+					gradient.addColorStop(0.85, colTriangle);
+					return gradient;
+				}
+			},
+			draw: function(ctx){
+				// рисуем фигуру на canvas
+				with (this){
+					ctx.fillStyle = colorTriangle(ctx);
+					ctx.beginPath();
+					ctx.moveTo(posX, posY);
+					ctx.lineTo(posX+width, posY+height);
+					ctx.lineTo(posX-width, posY+height);
+					ctx.lineTo(posX, posY);
+					ctx.closePath();
+					ctx.fill();
+				}
+			}
+		});
+		function drawBack(ctx,col1,col2,w,h){
+			// закрашиваем канвас градиентным фоном
+			ctx.save();
+			var g = ctx.createLinearGradient(0,0,0,h);
+			g.addColorStop(1,col1);
+			g.addColorStop(0,col2);
+			ctx.fillStyle = g;
+			ctx.fillRect(0,0,w,h);
+			ctx.restore();
+		}
+		// инициализация работы
+		function init(){
+			canvas = document.getElementById('canvas');
+			if (canvas.getContext){
+				ctx = canvas.getContext('2d');
+				//рисуем фон
+				drawBack(ctx,'#202020','#aaa',canvas.width,canvas.height);
+				//создаем 30 фигур, заноси их в массив и выводим на canvas
+				balls = [];
+				squares = [];
+				triangles = [];
+				for (var i = 1; i<=10;i++){
+					var item = new TBall(10+Math.random()*(canvas.width-30),
+					10+Math.random()*(canvas.height-30));
+					item.draw(ctx);
+					balls.push(item);
+				}for (var i = 1; i<=10;i++){
+					var item = new TSquare(10+Math.random()*(canvas.width-30),
+					10+Math.random()*(canvas.height-30));
+					item.draw(ctx);
+					squares.push(item);
+				}for (var i = 1; i<=10;i++){
+					var item = new TTriangle(10+Math.random()*(canvas.width-30),
+					10+Math.random()*(canvas.height-30));
+					item.draw(ctx);
+					triangles.push(item);
+				}
+			}
+		}
+		// создаем новую фигуру по щелчку мыши, добавляем ее в массив и рисуем его
+		function goInput(event){
+			var x = event.clientX;
+			var y = event.clientY;
+			var item
+			switch (Math.random()*3|0) 
+			{
+				case 0:
+					item = new TBall(x,y);
+					item.draw(ctx);
+					balls.push(item);
+					break
+				case 1:
+					item = new TSquare(x,y);
+					item.draw(ctx);
+					squares.push(item);
+					break
+				case 2:
+					item = new TTriangle(x,y);
+					item.draw(ctx);
+					triangles.push(item);
+					break
+			}
+		}
+		function moveUp(){
+			//реализация движения фигур наверх
+			drawBack(ctx,'#202020','#aaa',canvas.width,canvas.height);
+			for (var i = 0; i < balls.length; i){
+				balls[i].posX = balls[i].posX + (Math.random()*4-2);
+				balls[i].posY = balls[i].posY + (Math.random()*2-4);
+				balls[i].rBall = balls[i].rBall + 0.1;
+				balls[i].draw(ctx);
+				if ((balls[i].posX > canvas.width)||(balls[i].posX < 0) ||(balls[i].posY < 0)||(balls[i].rBall*2>=maxSize)) 
+					balls.splice(i,1);
+				else 
+					i++;
+			}
+			for (var i = 0; i < squares.length; i){
+				squares[i].posX = squares[i].posX + (Math.random()*4-2);
+				squares[i].posY = squares[i].posY + (Math.random()*2-4);
+				squares[i].sizeSquare = squares[i].sizeSquare + 0.1;
+				squares[i].draw(ctx);
+				if ((squares[i].posX > canvas.width)||(squares[i].posX < 0)||(squares[i].posY < 0)||(squares[i].sizeSquare>=(maxSize*0.6))) 
+					squares.splice(i,1);
+				else 
+					i++;
+			}
+			for (var i = 0; i < triangles.length; i){
+				triangles[i].posX = triangles[i].posX + (Math.random()*4-2);
+				triangles[i].posY = triangles[i].posY + (Math.random()*2-4);
+				triangles[i].width = triangles[i].width + 0.1;
+				triangles[i].height = triangles[i].height + 0.2;
+				triangles[i].draw(ctx);
+				if ((triangles[i].posX > canvas.width)||(triangles[i].posX < 0) ||(triangles[i].posY < 0)
+					||(1.3*triangles[i].width>=maxSize)||(1.3*triangles[i].height>=maxSize)) 
+					triangles.splice(i,1);
+				else 
+					i++;
+			}
+		}
+		function intervalMovingUp(){
+			idTimerUp = setInterval('moveUp();',50);
+			clearInterval(idTimerLeft);
+			clearInterval(idTimerDown);
+			clearInterval(idTimerRight);
+			clearInterval(idTimerChaos);
+			clearInterval(idTimerRandom);
+		}
+		function moveDown(){
+			//реализация движения фигур вниз
+			drawBack(ctx,'#202020','#aaa',canvas.width,canvas.height);
+			for (var i = 0; i < balls.length; i){
+				balls[i].posX = balls[i].posX + (Math.random()*4-2);
+				balls[i].posY = balls[i].posY - (Math.random()*2-4);
+				balls[i].rBall = balls[i].rBall + 0.1;
+				balls[i].draw(ctx);
+				if ((balls[i].posX > canvas.width)||(balls[i].posX < 0) ||(balls[i].posY < 0)||(balls[i].rBall*2>=maxSize)) 
+					balls.splice(i,1);
+				else 
+					i++;
+			}
+			for (var i = 0; i < squares.length; i){
+				squares[i].posX = squares[i].posX + (Math.random()*4-2);
+				squares[i].posY = squares[i].posY - (Math.random()*2-4);
+				squares[i].sizeSquare = squares[i].sizeSquare + 0.1;
+				squares[i].draw(ctx);
+				if ((squares[i].posX > canvas.width)||(squares[i].posX < 0)||(squares[i].posY < 0)||(squares[i].sizeSquare>=(maxSize*0.6))) 
+					squares.splice(i,1);
+				else 
+					i++;
+			}
+			for (var i = 0; i < triangles.length; i){
+				triangles[i].posX = triangles[i].posX + (Math.random()*4-2);
+				triangles[i].posY = triangles[i].posY - (Math.random()*2-4);
+				triangles[i].width = triangles[i].width + 0.1;
+				triangles[i].height = triangles[i].height + 0.2;
+				triangles[i].draw(ctx);
+				if ((triangles[i].posX > canvas.width)||(triangles[i].posX < 0) ||(triangles[i].posY < 0)
+					||(1.3*triangles[i].width>=maxSize)||(1.3*triangles[i].height>=maxSize)) 
+					triangles.splice(i,1);
+				else 
+					i++;
+			}
+		}
+		function intervalMovingDown(){
+			idTimerDown = setInterval('moveDown();',50);
+			clearInterval(idTimerUp);
+			clearInterval(idTimerLeft);
+			clearInterval(idTimerRight);
+			clearInterval(idTimerChaos);
+			clearInterval(idTimerRandom);
+		}
+		function moveRight(){
+			//реализация движения фигур вправо
+			drawBack(ctx,'#202020','#aaa',canvas.width,canvas.height);
+			for (var i = 0; i < balls.length; i){
+				balls[i].posX = balls[i].posX - (Math.random()*2-4);
+				balls[i].posY = balls[i].posY - (Math.random()*4-2);
+				balls[i].rBall = balls[i].rBall + 0.1;
+				balls[i].draw(ctx);
+				if ((balls[i].posX > canvas.width)||(balls[i].posX < 0) ||(balls[i].posY < 0)||(balls[i].rBall*2>=maxSize)) 
+					balls.splice(i,1);
+				else 
+					i++;
+			}
+			for (var i = 0; i < squares.length; i){
+				squares[i].posX = squares[i].posX - (Math.random()*2-4);
+				squares[i].posY = squares[i].posY - (Math.random()*4-2);
+				squares[i].sizeSquare = squares[i].sizeSquare + 0.1;
+				squares[i].draw(ctx);
+				if ((squares[i].posX > canvas.width)||(squares[i].posX < 0)||(squares[i].posY < 0)||(squares[i].sizeSquare>=(maxSize*0.6))) 
+					squares.splice(i,1);
+				else 
+					i++;
+			}
+			for (var i = 0; i < triangles.length; i){
+				triangles[i].posX = triangles[i].posX - (Math.random()*2-4);
+				triangles[i].posY = triangles[i].posY - (Math.random()*4-2);
+				triangles[i].width = triangles[i].width + 0.1;
+				triangles[i].height = triangles[i].height + 0.2;
+				triangles[i].draw(ctx);
+				if ((triangles[i].posX > canvas.width)||(triangles[i].posX < 0) ||(triangles[i].posY < 0)
+					||(1.3*triangles[i].width>=maxSize)||(1.3*triangles[i].height>=maxSize)) 
+					triangles.splice(i,1);
+				else 
+					i++;
+			}
+		}
+		function intervalMovingRight(){
+			idTimerRight = setInterval('moveRight();',50);
+			clearInterval(idTimerUp);
+			clearInterval(idTimerDown);
+			clearInterval(idTimerLeft);
+			clearInterval(idTimerChaos);
+			clearInterval(idTimerRandom);
+		}
+		function moveLeft(){
+			drawBack(ctx,'#202020','#aaa',canvas.width,canvas.height);
+			for (var i = 0; i < balls.length; i){
+				balls[i].posX = balls[i].posX + (Math.random()*2-4);
+				balls[i].posY = balls[i].posY - (Math.random()*4-2);
+				balls[i].rBall = balls[i].rBall + 0.1;
+				balls[i].draw(ctx);
+				if ((balls[i].posX > canvas.width)||(balls[i].posX < 0) ||(balls[i].posY < 0)||(balls[i].rBall*2>=maxSize)) 
+					balls.splice(i,1);
+				else 
+					i++;
+			}
+			for (var i = 0; i < squares.length; i){
+				squares[i].posX = squares[i].posX + (Math.random()*2-4);
+				squares[i].posY = squares[i].posY - (Math.random()*4-2);
+				squares[i].sizeSquare = squares[i].sizeSquare + 0.1;
+				squares[i].draw(ctx);
+				if ((squares[i].posX > canvas.width)||(squares[i].posX < 0)||(squares[i].posY < 0)||(squares[i].sizeSquare>=(maxSize*0.6))) 
+					squares.splice(i,1);
+				else 
+					i++;
+			}
+			for (var i = 0; i < triangles.length; i){
+				triangles[i].posX = triangles[i].posX + (Math.random()*2-4);
+				triangles[i].posY = triangles[i].posY - (Math.random()*4-2);
+				triangles[i].width = triangles[i].width + 0.1;
+				triangles[i].height = triangles[i].height + 0.2;
+				triangles[i].draw(ctx);
+				if ((triangles[i].posX > canvas.width)||(triangles[i].posX < 0) ||(triangles[i].posY < 0)
+					||(1.3*triangles[i].width>=maxSize)||(1.3*triangles[i].height>=maxSize)) 
+					triangles.splice(i,1);
+				else 
+					i++;
+			}
+		}
+		function intervalMovingLeft(){
+			idTimerLeft = setInterval('moveLeft();',50);
+			clearInterval(idTimerUp);
+			clearInterval(idTimerDown);
+			clearInterval(idTimerRight);
+			clearInterval(idTimerChaos);
+			clearInterval(idTimerRandom);
+		}
+		function moveRandom(wayRandom){
+			
+		}
+		function intervalMovingRandom(){
+			idTimerRandom = setInterval('moveChaos();',50);
+			clearInterval(idTimerLeft);
+			clearInterval(idTimerUp);
+			clearInterval(idTimerDown);
+			clearInterval(idTimerRight);
+			clearInterval(idTimerChaos);
+		}
+		function moveChaos(){
+			drawBack(ctx,'#202020','#aaa',canvas.width,canvas.height);
+			for (var i = 0; i < balls.length; i){
+				var way
+				switch (Math.random()*4|0) 
+				{
+					case 0://движение вверх
+						balls[i].posX = balls[i].posX + (Math.random()*4-2);
+						balls[i].posY = balls[i].posY + (Math.random()*2-4);
+						break
+					case 1://движение вниз
+						balls[i].posX = balls[i].posX + (Math.random()*4-2);
+						balls[i].posY = balls[i].posY - (Math.random()*2-4);
+						break
+					case 2://движение вправо
+						balls[i].posX = balls[i].posX - (Math.random()*2-4);
+						balls[i].posY = balls[i].posY - (Math.random()*4-2);
+						break
+					case 3://движение влево
+						balls[i].posX = balls[i].posX + (Math.random()*2-4);
+						balls[i].posY = balls[i].posY - (Math.random()*4-2);
+						break
+				}
+				balls[i].rBall = balls[i].rBall + 0.1;
+				balls[i].draw(ctx);
+				if ((balls[i].posX > canvas.width)||(balls[i].posX < 0) ||(balls[i].posY < 0)||(balls[i].rBall*2>=maxSize)) 
+					balls.splice(i,1);
+				else 
+					i++;
+			}
+			for (var i = 0; i < squares.length; i){
+				var way
+				switch (Math.random()*4|0) 
+				{
+					case 0://движение вверх
+						squares[i].posX = squares[i].posX + (Math.random()*4-2);
+						squares[i].posY = squares[i].posY + (Math.random()*2-4);
+						break
+					case 1://движение вниз
+						squares[i].posX = squares[i].posX + (Math.random()*4-2);
+						squares[i].posY = squares[i].posY - (Math.random()*2-4);
+						break
+					case 2://движение вправо
+						squares[i].posX = squares[i].posX - (Math.random()*2-4);
+						squares[i].posY = squares[i].posY - (Math.random()*4-2);
+						break
+					case 3://движение влево
+						squares[i].posX = squares[i].posX + (Math.random()*2-4);
+						squares[i].posY = squares[i].posY - (Math.random()*4-2);
+						break
+				}
+				squares[i].sizeSquare = squares[i].sizeSquare + 0.1;
+				squares[i].draw(ctx);
+				if ((squares[i].posX > canvas.width)||(squares[i].posX < 0)||(squares[i].posY < 0)||(squares[i].sizeSquare>=(maxSize*0.6))) 
+					squares.splice(i,1);
+				else 
+					i++;
+			}
+			for (var i = 0; i < triangles.length; i){
+				var way
+				switch (Math.random()*4|0) 
+				{
+					case 0://движение вверх
+						triangles[i].posX = triangles[i].posX + (Math.random()*4-2);
+						triangles[i].posY = triangles[i].posY + (Math.random()*2-4);
+						break
+					case 1://движение вниз
+						triangles[i].posX = triangles[i].posX + (Math.random()*4-2);
+						triangles[i].posY = triangles[i].posY - (Math.random()*2-4);
+						break
+					case 2://движение вправо
+						triangles[i].posX = triangles[i].posX - (Math.random()*2-4);
+						triangles[i].posY = triangles[i].posY - (Math.random()*4-2);
+						break
+					case 3://движение влево
+						triangles[i].posX = triangles[i].posX + (Math.random()*2-4);
+						triangles[i].posY = triangles[i].posY - (Math.random()*4-2);
+						break
+				}
+				triangles[i].width = triangles[i].width + 0.1;
+				triangles[i].height = triangles[i].height + 0.2;
+				triangles[i].draw(ctx);
+				if ((triangles[i].posX > canvas.width)||(triangles[i].posX < 0) ||(triangles[i].posY < 0)
+					||(1.3*triangles[i].width>=maxSize)||(1.3*triangles[i].height>=maxSize)) 
+					triangles.splice(i,1);
+				else 
+					i++;
+			}
+		}
+		function intervalMovingChaos(){
+			idTimerChaos = setInterval('moveChaos();',50);
+			clearInterval(idTimerLeft);
+			clearInterval(idTimerUp);
+			clearInterval(idTimerDown);
+			clearInterval(idTimerRight);
+			clearInterval(idTimerRandom);
+		}
+		function intervalStopMoving(){
+			clearInterval(idTimerLeft);
+			clearInterval(idTimerUp);
+			clearInterval(idTimerDown);
+			clearInterval(idTimerRight);
+			clearInterval(idTimerRandom);
+			clearInterval(idTimerChaos);
+		}
+	</script>
+	<style type="text/css">
+		canvas { border: 1px solid blue; }
+	</style>
+</head>
+<body onload="init();">
+	<canvas id="canvas" width="1000" height="400" onclick="goInput(event);">
+	</canvas>
+	<form>
+		<input type = "button" value = "Движение вверх" onclick="intervalMovingUp()">
+		<input type = "button" value = "Движение вниз" onclick="intervalMovingDown()">
+		<input type = "button" value = "Движение вправо" onclick="intervalMovingRight()">
+		<input type = "button" value = "Движение влево" onclick="intervalMovingLeft()">
+		<input type = "button" value = "Рандомное движение" onclick="intervalMovingRandom()">
+		<input type = "button" value = "Хаотичное движение" onclick="intervalMovingChaos()">
+		<input type = "button" value = "Стоп" onclick="intervalStopMoving()">
+	</form>
+</body>
+</html>
